@@ -24,28 +24,28 @@ export default class Graph {
     const offsetY = 100
     const edgeLength = 600
     const t1 = performance.now()
-    // this.context.translate(offsetX,offsetY)
-    this.drawTriangle(edgeLength, offsetX, offsetY)
-    this.drawScale(this.options.scale, edgeLength, offsetX, offsetY)
-    this.drawPoints(data, edgeLength, offsetX, offsetY)
-    this.drawAxisTitle(this.options.axisTitle, edgeLength, offsetX, offsetY)
+    this.context.translate(offsetX, offsetY) // use global tranlate instead of offset in every single path
+    this.drawTriangle(edgeLength)
+    this.drawScale(this.options.scale, edgeLength)
+    this.drawPoints(data, edgeLength)
+    this.drawAxisTitle(this.options.axisTitle, edgeLength)
     console.log(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
-  private drawTriangle(edgeLength: number, offsetX: number, offsetY: number) {
+  private drawTriangle(edgeLength: number) {
     const ctx = this.context
     ctx.fillStyle = 'white'
     const triangleHeight = edgeLength * SIN60
     ctx.beginPath()
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 1
-    ctx.moveTo(0 + offsetX, triangleHeight + offsetY)
-    ctx.lineTo(.5 * edgeLength + offsetX, 0 + offsetY)
-    ctx.lineTo(edgeLength + offsetX, triangleHeight + offsetY)
-    ctx.lineTo(0 + offsetX, triangleHeight + offsetY)
+    ctx.moveTo(0, triangleHeight)
+    ctx.lineTo(.5 * edgeLength, 0)
+    ctx.lineTo(edgeLength, triangleHeight)
+    ctx.lineTo(0, triangleHeight)
     ctx.stroke()
     ctx.fill()
   }
-  private drawScale(option: GraphOptions['scale'], triangleEdgeLength: number, offsetX: number, offsetY: number) {
+  private drawScale(option: GraphOptions['scale'], triangleEdgeLength: number) {
     option ||= {}
     const scaleSize = 10 // 
     if (option.disable) return
@@ -54,7 +54,7 @@ export default class Graph {
     // u axis
     for (let i = 1; i <= 5; i++) {
       const pos = getCanvas2DCoord(.2 * i, 0, 1 - .2 * 1)
-      applyTranformation(pos, triangleEdgeLength, [offsetX, offsetY])
+      applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
@@ -63,7 +63,7 @@ export default class Graph {
     // v axis
     for (let i = 1; i <= 5; i++) {
       const pos = getCanvas2DCoord(1 - .2 * i, 0.2 * i, 0)
-      applyTranformation(pos, triangleEdgeLength, [offsetX, offsetY])
+      applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] + scaleSize, pos[1])
@@ -72,7 +72,7 @@ export default class Graph {
     // w axis
     for (let i = 1; i <= 5; i++) {
       const pos = getCanvas2DCoord(0, 1 - .2 * i, .2 * i)
-      applyTranformation(pos, triangleEdgeLength, [offsetX, offsetY])
+      applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
@@ -80,7 +80,7 @@ export default class Graph {
     }
 
   }
-  private drawAxisTitle(data: GraphOptions['axisTitle'], edgeLength: number, offsetX: number, offsetY: number) {
+  private drawAxisTitle(data: GraphOptions['axisTitle'], edgeLength: number) {
     if (!data) return
     const margin = 50
     const ctx = this.context
@@ -92,35 +92,35 @@ export default class Graph {
     // u axis
     if (!data[0].disable) {
       const pos1 = getCanvas2DCoord(.5, 0, .5)
-      applyTranformation(pos1, edgeLength, [offsetX, offsetY + margin])
+      applyTranformation(pos1, edgeLength, [0, margin])
       ctx.beginPath()
       ctx.fillText(data[0].text, ...pos1)
     }
     // v axis
     if (!data[1].disable) {
       const pos2 = getCanvas2DCoord(.5, .5, 0)
-      applyTranformation(pos2, edgeLength, [offsetX + margin, offsetY])
+      applyTranformation(pos2, edgeLength, [margin, 0])
       ctx.save()
       ctx.translate(...pos2)
-      ctx.rotate(Math.PI/3)
+      ctx.rotate(Math.PI / 3)
       ctx.beginPath()
-      ctx.fillText(data[1].text, 0,0)
+      ctx.fillText(data[1].text, 0, 0)
       ctx.restore()
     }
     // w axis
     if (!data[2].disable) {
       const pos3 = getCanvas2DCoord(0, .5, 0.5)
-      applyTranformation(pos3, edgeLength, [offsetX - margin, offsetY])
+      applyTranformation(pos3, edgeLength, [ - margin, 0])
       ctx.save()
       ctx.translate(...pos3)
       ctx.beginPath()
-      ctx.rotate(-Math.PI/3)
+      ctx.rotate(-Math.PI / 3)
       ctx.textBaseline = 'middle'
-      ctx.fillText(data[2].text, 0,0)
+      ctx.fillText(data[2].text, 0, 0)
       ctx.restore()
     }
   }
-  private drawPoints(content: GraphOptions['data'], triangleEdgeLength: number, offsetX: number, offsetY: number) {
+  private drawPoints(content: GraphOptions['data'], triangleEdgeLength: number) {
     if (!content || content.length === 0) return
     let x = 0  //reduce gc
     let y = 0
@@ -130,9 +130,7 @@ export default class Graph {
       [x, y] = getCanvas2DCoord(...point.coordinate)
       // avoiding using `applyTransformation` to reduce gc
       x *= triangleEdgeLength
-      x += offsetX
       y *= triangleEdgeLength
-      y += offsetY
       if (point.type === 'dot') {
         if (point.dotColor) ctx.fillStyle = point.dotColor
         const dotSize = point.dotSize || 5
@@ -186,9 +184,10 @@ export function getCanvas2DCoord(u: number, v: number, w: number): [number, numb
   return [x, y]
 }
 
-function applyTranformation(position: [number, number], scale: number, translate: [number, number]) {
+function applyTranformation(position: [number, number], scale: number, translate?: [number, number]) {
   position[0] *= scale
   position[1] *= scale
+  if(!translate)return position
   position[0] += translate[0]
   position[1] += translate[1]
   return position
