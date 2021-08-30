@@ -5,7 +5,7 @@ import Graph from "./src/Graph";
 const option = {
   width: 1200,
   height: 800,
-  title: [
+  axisTitle: [
     {
       text: 'U Axis',
       fontSize: 20
@@ -27,7 +27,7 @@ function animate(){
   const option = {
     width: 1200,
     height: 800,
-    title: [
+    axisTitle: [
       {
         text: 'U Axis',
         fontSize: 20

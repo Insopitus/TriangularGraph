@@ -24,10 +24,11 @@ export default class Graph {
     const offsetY = 100
     const edgeLength = 600
     const t1 = performance.now()
+    // this.context.translate(offsetX,offsetY)
     this.drawTriangle(edgeLength, offsetX, offsetY)
     this.drawScale(this.options.scale, edgeLength, offsetX, offsetY)
     this.drawPoints(data, edgeLength, offsetX, offsetY)
-    this.drawTitle(this.options.title, edgeLength, offsetX, offsetY)
+    this.drawAxisTitle(this.options.axisTitle, edgeLength, offsetX, offsetY)
     console.log(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
   private drawTriangle(edgeLength: number, offsetX: number, offsetY: number) {
@@ -79,43 +80,44 @@ export default class Graph {
     }
 
   }
-  private drawTitle(data: GraphOptions['title'], edgeLength: number, offsetX: number, offsetY: number) {
+  private drawAxisTitle(data: GraphOptions['axisTitle'], edgeLength: number, offsetX: number, offsetY: number) {
     if (!data) return
     const margin = 50
     const ctx = this.context
     ctx.font = '30px Arial'
     ctx.fillStyle = 'black'
     ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
+    // u axis
     if (!data[0].disable) {
-      // u axis
       const pos1 = getCanvas2DCoord(.5, 0, .5)
       applyTranformation(pos1, edgeLength, [offsetX, offsetY + margin])
       ctx.beginPath()
-      ctx.textBaseline = 'top'
       ctx.fillText(data[0].text, ...pos1)
     }
+    // v axis
     if (!data[1].disable) {
-      // v axis
       const pos2 = getCanvas2DCoord(.5, .5, 0)
       applyTranformation(pos2, edgeLength, [offsetX + margin, offsetY])
-      // ctx.save()
+      ctx.save()
+      ctx.translate(...pos2)
+      ctx.rotate(Math.PI/3)
       ctx.beginPath()
-      // ctx.rotate(Math.PI/3)
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(data[1].text, ...pos2)
+      ctx.fillText(data[1].text, 0,0)
+      ctx.restore()
     }
+    // w axis
     if (!data[2].disable) {
-      // w axis
       const pos3 = getCanvas2DCoord(0, .5, 0.5)
       applyTranformation(pos3, edgeLength, [offsetX - margin, offsetY])
-      // ctx.save()
+      ctx.save()
+      ctx.translate(...pos3)
       ctx.beginPath()
-      // ctx.rotate(Math.PI/3)
-      ctx.textAlign = 'right'
+      ctx.rotate(-Math.PI/3)
       ctx.textBaseline = 'middle'
-      ctx.fillText(data[2].text, ...pos3)
+      ctx.fillText(data[2].text, 0,0)
+      ctx.restore()
     }
   }
   private drawPoints(content: GraphOptions['data'], triangleEdgeLength: number, offsetX: number, offsetY: number) {
@@ -146,11 +148,11 @@ interface GraphOptions {
   width?: number,
   height?: number,
   clockwise?: boolean,
-  title?: TitleOptions[],
+  axisTitle?: AxisTitleOptions[],
   scale?: ScaleOptions,
   data: DataOptions[],
 }
-interface TitleOptions {
+interface AxisTitleOptions {
   disable?: boolean
   text?: string
   fontSize?: number
