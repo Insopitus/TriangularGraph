@@ -19,6 +19,10 @@ const option = {
       fontSize: 20
     },
   ],
+  scale:{
+    innerLine:true,
+    innerLineColor:'rgba(1,1,1,.2)'
+  },
   data:generatePoints()
 }
 const graph = new Graph('.graph', option)
@@ -48,7 +52,7 @@ function animate(){
   requestAnimationFrame(animate)
 }
 function generatePoints() {
-  const POINT_COUNT = 1e1
+  const POINT_COUNT = 1e2
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
     let u = Math.random()

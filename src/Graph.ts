@@ -4,7 +4,7 @@ export default class Graph {
   context: CanvasRenderingContext2D
   options: GraphOptions
   constructor(query: string, options: GraphOptions) {
-    if (!options) throw 'option is needed.'
+    if (!options) throw 'options are needed.'
     this.options = options
     const width = options.width || 600
     const height = options.height || 400
@@ -16,7 +16,6 @@ export default class Graph {
     this.context.fillStyle = 'gray'
     this.context.fillRect(0, 0, width, height)
     this.render(options.data)
-    // this.#context.translate(.5,.5)
   }
   render(data?: GraphOptions['data']) {
     data ||= this.options.data
@@ -50,33 +49,62 @@ export default class Graph {
     const scaleSize = 10 // 
     if (option.disable) return
     const ctx = this.context
-    ctx.strokeStyle = 'black'
     // u axis
     for (let i = 1; i <= 5; i++) {
+      ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(.2 * i, 0, 1 - .2 * 1)
       applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
       ctx.stroke()
+      if(option.innerLine){
+        ctx.beginPath()
+        ctx.moveTo(...pos)
+        const pos2 = getCanvas2DCoord(.2*i,1-.2*i,0)
+        applyTranformation(pos2,triangleEdgeLength)
+        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.lineTo(...pos2)
+        ctx.stroke()
+      }
     }
     // v axis
     for (let i = 1; i <= 5; i++) {
+      ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(1 - .2 * i, 0.2 * i, 0)
       applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] + scaleSize, pos[1])
       ctx.stroke()
+      if(option.innerLine){
+        ctx.beginPath()
+        ctx.moveTo(...pos)
+        const pos2 = getCanvas2DCoord(0,0.2 * i,1 - .2 * i)
+        applyTranformation(pos2,triangleEdgeLength)
+        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.lineTo(...pos2)
+        ctx.stroke()
+      }
     }
     // w axis
     for (let i = 1; i <= 5; i++) {
+      ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(0, 1 - .2 * i, .2 * i)
       applyTranformation(pos, triangleEdgeLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
       ctx.stroke()
+      if(option.innerLine){
+        ctx.beginPath()
+        ctx.moveTo(...pos)
+        const pos2 = getCanvas2DCoord(1-0.2 * i,0,.2 * i)
+        applyTranformation(pos2,triangleEdgeLength)
+        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.lineTo(...pos2)
+        ctx.stroke()
+      }
     }
 
   }
