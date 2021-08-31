@@ -52,7 +52,9 @@ function animate(){
   requestAnimationFrame(animate)
 }
 function generatePoints() {
+  const t0 = performance.now()
   const POINT_COUNT = 1e2
+
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
     let u = Math.random()
@@ -73,6 +75,7 @@ function generatePoints() {
     }
     // debugger
   }
+  console.log(`Generating ${POINT_COUNT} points took ${performance.now() - t0} ms.`)
   return data
 }
 

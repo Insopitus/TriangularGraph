@@ -46,9 +46,13 @@ export default class Graph {
   }
   private drawScale(option: GraphOptions['scale'], triangleEdgeLength: number) {
     option ||= {}
-    const scaleSize = 10 // 
+    const scaleSize = 10 // length of scale line
+    const textMargin = 24 // distance between triangle edge and scale text
     if (option.disable) return
     const ctx = this.context
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#000'
     // u axis
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
@@ -58,11 +62,12 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
       ctx.stroke()
-      if(option.innerLine){
+      ctx.fillText(`${.2*100*i}%`,pos[0] - textMargin * COS60, pos[1] + textMargin * SIN60)
+      if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
-        const pos2 = getCanvas2DCoord(.2*i,1-.2*i,0)
-        applyTranformation(pos2,triangleEdgeLength)
+        const pos2 = getCanvas2DCoord(.2 * i, 1 - .2 * i, 0)
+        applyTranformation(pos2, triangleEdgeLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -77,11 +82,12 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] + scaleSize, pos[1])
       ctx.stroke()
-      if(option.innerLine){
+      ctx.fillText(`${.2*100*i}%`,pos[0] + textMargin, pos[1])
+      if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
-        const pos2 = getCanvas2DCoord(0,0.2 * i,1 - .2 * i)
-        applyTranformation(pos2,triangleEdgeLength)
+        const pos2 = getCanvas2DCoord(0, 0.2 * i, 1 - .2 * i)
+        applyTranformation(pos2, triangleEdgeLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -96,11 +102,12 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
       ctx.stroke()
-      if(option.innerLine){
+      ctx.fillText(`${.2*100*i}%`,pos[0] - textMargin * COS60, pos[1] - textMargin * SIN60)
+      if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
-        const pos2 = getCanvas2DCoord(1-0.2 * i,0,.2 * i)
-        applyTranformation(pos2,triangleEdgeLength)
+        const pos2 = getCanvas2DCoord(1 - 0.2 * i, 0, .2 * i)
+        applyTranformation(pos2, triangleEdgeLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -110,7 +117,7 @@ export default class Graph {
   }
   private drawAxisTitle(data: GraphOptions['axisTitle'], edgeLength: number) {
     if (!data) return
-    const margin = 50
+    const margin = 60
     const ctx = this.context
     ctx.font = '30px Arial'
     ctx.fillStyle = 'black'
@@ -138,7 +145,7 @@ export default class Graph {
     // w axis
     if (!data[2].disable) {
       const pos3 = getCanvas2DCoord(0, .5, 0.5)
-      applyTranformation(pos3, edgeLength, [ - margin, 0])
+      applyTranformation(pos3, edgeLength, [- margin, 0])
       ctx.save()
       ctx.translate(...pos3)
       ctx.beginPath()
@@ -152,18 +159,27 @@ export default class Graph {
     if (!content || content.length === 0) return
     let x = 0  //reduce gc
     let y = 0
+    let u = 0
+    let v = 0
+    let dotSize = 5
     const ctx = this.context
+    const PIx2 = Math.PI * 2
     ctx.strokeStyle = 'dodgerblue'
-    for (let point of content) {
-      [x, y] = getCanvas2DCoord(...point.coordinate)
-      // avoiding using `applyTransformation` to reduce gc
+    for (var i=0,l=content.length;i<l;i++) {
+      const point = content[i]
+      // [x, y] = getCanvas2DCoord(...point.coordinate)
+      // boost performance
+      u = point.coordinate[0]
+      v = point.coordinate[1]
+      x = v * COS60 + u
+      y = (1 - v) * SIN60
       x *= triangleEdgeLength
       y *= triangleEdgeLength
       if (point.type === 'dot') {
-        if (point.dotColor) ctx.fillStyle = point.dotColor
-        const dotSize = point.dotSize || 5
+        if (point.dotColor) ctx.fillStyle = point.dotColor // this one takes really long
+        if (point.dotSize) dotSize = point.dotSize
         ctx.beginPath()
-        ctx.arc(x, y, dotSize, 0, Math.PI * 2)
+        ctx.arc(x, y, dotSize, 0, PIx2)
         ctx.fill()
       }
     }
@@ -215,7 +231,7 @@ export function getCanvas2DCoord(u: number, v: number, w: number): [number, numb
 function applyTranformation(position: [number, number], scale: number, translate?: [number, number]) {
   position[0] *= scale
   position[1] *= scale
-  if(!translate)return position
+  if (!translate) return position
   position[0] += translate[0]
   position[1] += translate[1]
   return position
