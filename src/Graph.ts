@@ -1,33 +1,55 @@
 const SIN60 = Math.sin(Math.PI / 3)
 const COS60 = Math.cos(Math.PI / 3)
 export default class Graph {
+  domElement: HTMLDivElement
   context: CanvasRenderingContext2D
   options: GraphOptions
+  offset: [number, number]
+  data: Partial<DataForSearch>[]
+  enableTooltip = false
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
     this.options = options
     const width = options.width || 600
     const height = options.height || 400
+    const container = document.querySelector(query)
+    if (!container) throw `The elment ${query} cannot be found.`
+    this.domElement = document.createElement('div')
+    this.domElement.className = 'graph-container'
+    Object.assign(this.domElement.style, {
+      height: height + 'px',
+      width: width + 'px',
+      position: 'relative'
+    })
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    document.querySelector(query).appendChild(canvas)
-    this.context = canvas.getContext('2d', { alpha: false })
-    this.context.fillStyle = 'gray'
-    this.context.fillRect(0, 0, width, height)
+    canvas.style.position = 'absolute'
+    container.appendChild(this.domElement)
+    this.domElement.appendChild(canvas)
+    const context = canvas.getContext('2d', { alpha: false })
+    // background color
+    context.fillStyle = 'gray'
+    context.fillRect(0, 0, width, height)
+    const offsetX = 200
+    const offsetY = 100
+    this.offset = [offsetX, offsetY]
+    context.translate(offsetX, offsetY) // use global tranlate instead of offset in every single path
+    this.context = context
+    this.enableTooltip = !options.tooltip?.disable
     this.render(options.data)
+
   }
   render(data?: GraphOptions['data']) {
     data ||= this.options.data
-    const offsetX = 200
-    const offsetY = 100
+
     const edgeLength = 600
     const t1 = performance.now()
-    this.context.translate(offsetX, offsetY) // use global tranlate instead of offset in every single path
     this.drawTriangle(edgeLength)
     this.drawScale(this.options.scale, edgeLength)
     this.drawPoints(data, edgeLength)
     this.drawAxisTitle(this.options.axisTitle, edgeLength)
+    this.drawHoverLayer(this.options.tooltip)
     console.log(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
   private drawTriangle(edgeLength: number) {
@@ -62,7 +84,7 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
       ctx.stroke()
-      ctx.fillText(`${.2*100*i}%`,pos[0] - textMargin * COS60, pos[1] + textMargin * SIN60)
+      ctx.fillText(`${.2 * 100 * i}%`, pos[0] - textMargin * COS60, pos[1] + textMargin * SIN60)
       if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
@@ -82,7 +104,7 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] + scaleSize, pos[1])
       ctx.stroke()
-      ctx.fillText(`${.2*100*i}%`,pos[0] + textMargin, pos[1])
+      ctx.fillText(`${.2 * 100 * i}%`, pos[0] + textMargin, pos[1])
       if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
@@ -102,7 +124,7 @@ export default class Graph {
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
       ctx.stroke()
-      ctx.fillText(`${.2*100*i}%`,pos[0] - textMargin * COS60, pos[1] - textMargin * SIN60)
+      ctx.fillText(`${.2 * 100 * i}%`, pos[0] - textMargin * COS60, pos[1] - textMargin * SIN60)
       if (option.innerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
@@ -157,24 +179,29 @@ export default class Graph {
   }
   private drawPoints(content: GraphOptions['data'], triangleEdgeLength: number) {
     if (!content || content.length === 0) return
+    this.data = content
     let x = 0  //reduce gc
     let y = 0
     let u = 0
     let v = 0
-    let dotSize = 5
+    let w = 0
     const ctx = this.context
     const PIx2 = Math.PI * 2
     ctx.strokeStyle = 'dodgerblue'
-    for (var i=0,l=content.length;i<l;i++) {
+    for (var i = 0, l = content.length; i < l; i++) {
       const point = content[i]
+      const data = this.data[i]
+      let dotSize = point.dotSize || 5
       // [x, y] = getCanvas2DCoord(...point.coordinate)
       // boost performance
       u = point.coordinate[0]
       v = point.coordinate[1]
+      w = point.coordinate[2]
       x = v * COS60 + u
       y = (1 - v) * SIN60
-      x *= triangleEdgeLength
-      y *= triangleEdgeLength
+      x = Math.trunc(triangleEdgeLength * x)
+      y = Math.trunc(triangleEdgeLength * y)
+
       if (point.type === 'dot') {
         if (point.dotColor) ctx.fillStyle = point.dotColor // this one takes really long
         if (point.dotSize) dotSize = point.dotSize
@@ -182,6 +209,75 @@ export default class Graph {
         ctx.arc(x, y, dotSize, 0, PIx2)
         ctx.fill()
       }
+      // tooltip
+      if (this.enableTooltip) {
+        data.xyCoord = [x, y]
+        data.squareRadius = dotSize ** 2
+
+        data.uAxisCoord = [Math.trunc(u*triangleEdgeLength), Math.trunc(SIN60*triangleEdgeLength)]
+        data.vAxisCoord = [Math.trunc((v*COS60+1-v)*triangleEdgeLength), Math.trunc((1-v)*SIN60*triangleEdgeLength)]
+        data.wAxisCoord = [Math.trunc((1-w)*COS60*triangleEdgeLength), Math.trunc(w*SIN60*triangleEdgeLength)]
+      }
+
+
+
+    }
+  }
+  private drawHoverLayer(option: GraphOptions['tooltip']) {
+    if (!this.data) return
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    this.domElement.appendChild(canvas)
+    Object.assign(canvas.style, {
+      position: 'absolute',
+      top: '0',
+      left: '0'
+    })
+    canvas.height = this.domElement.clientHeight
+    canvas.width = this.domElement.clientWidth
+    canvas.addEventListener('mousemove', hoverItem)
+    const ctx = canvas.getContext('2d')
+    ctx.translate(...this.offset)
+    ctx.strokeStyle = '#f44e'
+    ctx.setLineDash([2, 2])
+    ctx.fillStyle = '#f00f'
+    const that = this
+    function hoverItem(e: MouseEvent) {
+      requestAnimationFrame(() => {
+        ctx.clearRect(0,0,canvas.height,canvas.width)
+        const x = e.offsetX - that.offset[0]
+        const y = e.offsetY - that.offset[1]
+        
+        const item = pick(x, y)
+        if (!item) return
+        // draw dash lines to axes
+        ctx.beginPath()
+        ctx.moveTo(...item.xyCoord)
+        ctx.lineTo(...item.uAxisCoord)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(...item.xyCoord)
+        ctx.lineTo(...item.vAxisCoord)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(...item.xyCoord)
+        ctx.lineTo(...item.wAxisCoord)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.arc(...item.xyCoord,item.dotSize,0,Math.PI*2)
+        ctx.fill()
+      })
+    }
+    function pick(x: number, y: number) {
+      // maybe add a spatial search tree for better performance
+      // TODO: no early returns, since there would be mutlple points at the same place
+      for (let i = 0, l = that.data.length; i < l; i++) {
+        const point = that.data[i]
+        const squareDistance = (x - point.xyCoord[0]) ** 2 + (y - point.xyCoord[1]) ** 2
+        if (squareDistance < point.squareRadius) {
+          return point
+        }
+      }
+      
     }
   }
 }
@@ -193,6 +289,9 @@ interface GraphOptions {
   axisTitle?: AxisTitleOptions[],
   scale?: ScaleOptions,
   data: DataOptions[],
+  tooltip?: {
+    disable?: boolean
+  }
 }
 interface AxisTitleOptions {
   disable?: boolean
@@ -210,7 +309,14 @@ interface DataOptions {
   dotColor?: string
   imageURL?: string
   coordinate: [number, number, number]
+  uAxisCoord: [number, number],
+  vAxisCoord: [number, number],
+  wAxisCoord: [number, number]
+}
 
+interface DataForSearch extends DataOptions {
+  xyCoord: [number, number],
+  squareRadius: number
 }
 
 
