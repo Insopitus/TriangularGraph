@@ -56,7 +56,7 @@ function animate(){
 }
 function generatePoints() {
   const t0 = performance.now()
-  const POINT_COUNT = 1e3
+  const POINT_COUNT = 1e1
 
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
@@ -72,8 +72,9 @@ function generatePoints() {
     const colorW = Math.trunc(w * 0xff).toString(16).padStart(2, '0')
     data[i] = {
       type: 'dot',
+      title:'Entity '+ i,
       dotColor: '#' + colorU + colorV + colorW,
-      dotSize: 5,
+      dotSize: 10,
       coordinate: [u, v, w]
     }
     // debugger
