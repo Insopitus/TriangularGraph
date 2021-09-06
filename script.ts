@@ -5,23 +5,25 @@ import Graph from "./src/Graph";
 const option = {
   width: 1200,
   height: 800,
-  axisTitle: [
-    {
-      text: 'U Axis',
-      fontSize: 20
+  axis:{
+    ticks:{
+      innerLine:true,
+      innerLineColor:'rgba(1,1,1,.2)'
     },
-    {
-      text: 'V Axis',
-      fontSize: 20
-    },
-    {
-      text: 'W Axis',
-      fontSize: 20
-    },
-  ],
-  scale:{
-    innerLine:true,
-    innerLineColor:'rgba(1,1,1,.2)'
+    titles: [
+      {
+        text: 'U Axis',
+        fontSize: 20
+      },
+      {
+        text: 'V Axis',
+        fontSize: 20
+      },
+      {
+        text: 'W Axis',
+        fontSize: 20
+      },
+    ]
   },
   data:generatePoints()
 }
@@ -56,7 +58,7 @@ function animate(){
 }
 function generatePoints() {
   const t0 = performance.now()
-  const POINT_COUNT = 1e1
+  const POINT_COUNT = 1e5
 
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
@@ -79,7 +81,7 @@ function generatePoints() {
     }
     // debugger
   }
-  console.log(`Generating ${POINT_COUNT} points took ${performance.now() - t0} ms.`)
+  console.debug(`Generating ${POINT_COUNT} points took ${performance.now() - t0} ms.`)
   return data
 }
 
