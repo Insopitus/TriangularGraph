@@ -10,6 +10,7 @@ export default class Graph {
   #enableTooltip = false
   #imageCache: Map<string, HTMLImageElement> // if the data uses image instead of dots
   #edgeLength:number
+  // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
     this.#options = options
@@ -17,6 +18,7 @@ export default class Graph {
     const height = options.height || 400
     const container = document.querySelector(query)
     if (!container) throw `The elment ${query} cannot be found.`
+    // this.#container = container
     this.#domElement = document.createElement('div')
     this.#domElement.className = 'graph-container'
     Object.assign(this.#domElement.style, {
@@ -237,6 +239,7 @@ export default class Graph {
     if (!this.#data) return
     const edgeLength = this.#edgeLength
     const canvas = document.createElement('canvas') as HTMLCanvasElement
+    // this.#tooltipCanvas = canvas
     this.#domElement.appendChild(canvas)
     Object.assign(canvas.style, {
       position: 'absolute',
@@ -331,6 +334,10 @@ export default class Graph {
       })
     }
 
+  }
+  destroy(){
+    this.#domElement.remove()
+    // brower will handle the event listeners itself
   }
 }
 function pick(x: number, y: number, data: Partial<DataForSearch>[]) {

@@ -28,6 +28,7 @@ const option = {
   data:generatePoints()
 }
 const graph = new Graph('.graph', option)
+// graph.destroy()
 console.log(graph);
 // animate()
 function animate(){
@@ -58,7 +59,7 @@ function animate(){
 }
 function generatePoints() {
   const t0 = performance.now()
-  const POINT_COUNT = 1e5
+  const POINT_COUNT = 1e2
 
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
