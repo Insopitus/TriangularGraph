@@ -6,10 +6,11 @@ export default class Graph {
   #context: CanvasRenderingContext2D
   #options: GraphOptions
   #offset: [number, number]
-  #data: Partial<DataForSearch>[]
+  data: Partial<DataForSearch>[]
   #enableTooltip = false
   #imageCache: Map<string, HTMLImageElement> // if the data uses image instead of dots
-  #edgeLength:number
+  #sideLength: number
+  #defaultImageSize = 28
   // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
@@ -39,10 +40,10 @@ export default class Graph {
     const offsetX = 200
     const offsetY = 100
     this.#offset = [offsetX, offsetY]
-    this.#edgeLength = 600
+    this.#sideLength = 600
     context.translate(offsetX, offsetY) // use global tranlate instead of offset in every single path
     this.#context = context
-    this.#enableTooltip = !options.tooltip?.disable  
+    this.#enableTooltip = !options.tooltip?.disable
     this.render(options.data)
 
   }
@@ -50,29 +51,38 @@ export default class Graph {
     data ||= this.#options.data
 
     const t1 = performance.now()
+    this.calcLayout()
+    this.drawTitles(this.#options.title,this.#options.subtitle)
     this.drawTriangleBody()
     this.drawAxes(this.#options.axis)
-    this.drawPoints(data)
+    this.drawDataSet(data)
     this.drawTooltipLayer(this.#options.tooltip)
     console.debug(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
+  private calcLayout(){
+    const {title,subtitle,axis,width,height} = this.#options
+  }
+  private drawTitles(titleOptions:TextOptions,subtitleOptions:TextOptions){
+    if(!titleOptions || titleOptions.disable)return
+
+  }
   private drawTriangleBody() {
-    const edgeLength = this.#edgeLength
+    const sideLength = this.#sideLength
     const ctx = this.#context
     ctx.fillStyle = 'white'
-    const triangleHeight = edgeLength * SIN60
+    const triangleHeight = sideLength * SIN60
     ctx.beginPath()
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 1
     ctx.moveTo(0, triangleHeight)
-    ctx.lineTo(.5 * edgeLength, 0)
-    ctx.lineTo(edgeLength, triangleHeight)
+    ctx.lineTo(.5 * sideLength, 0)
+    ctx.lineTo(sideLength, triangleHeight)
     ctx.lineTo(0, triangleHeight)
     ctx.stroke()
     ctx.fill()
   }
-  private drawAxes(options:GraphOptions['axis']){
-    options||={}
+  private drawAxes(options: GraphOptions['axis']) {
+    options ||= {}
     this.drawTicks(options.ticks)
     this.drawAxisTitle(options.titles)
   }
@@ -81,7 +91,7 @@ export default class Graph {
     const scaleSize = 10 // length of scale line
     const textMargin = 24 // distance between triangle edge and scale text
     if (option.disable) return
-    const triangleEdgeLength = this.#edgeLength
+    const triangleSideLength = this.#sideLength
     const ctx = this.#context
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -90,7 +100,7 @@ export default class Graph {
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(.2 * i, 0, 1 - .2 * 1)
-      applyTranformation(pos, triangleEdgeLength)
+      applyTranformation(pos, triangleSideLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
@@ -100,7 +110,7 @@ export default class Graph {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(.2 * i, 1 - .2 * i, 0)
-        applyTranformation(pos2, triangleEdgeLength)
+        applyTranformation(pos2, triangleSideLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -110,7 +120,7 @@ export default class Graph {
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(1 - .2 * i, 0.2 * i, 0)
-      applyTranformation(pos, triangleEdgeLength)
+      applyTranformation(pos, triangleSideLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] + scaleSize, pos[1])
@@ -120,7 +130,7 @@ export default class Graph {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(0, 0.2 * i, 1 - .2 * i)
-        applyTranformation(pos2, triangleEdgeLength)
+        applyTranformation(pos2, triangleSideLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -130,7 +140,7 @@ export default class Graph {
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
       const pos = getCanvas2DCoord(0, 1 - .2 * i, .2 * i)
-      applyTranformation(pos, triangleEdgeLength)
+      applyTranformation(pos, triangleSideLength)
       ctx.beginPath()
       ctx.moveTo(pos[0], pos[1])
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
@@ -140,7 +150,7 @@ export default class Graph {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(1 - 0.2 * i, 0, .2 * i)
-        applyTranformation(pos2, triangleEdgeLength)
+        applyTranformation(pos2, triangleSideLength)
         ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
         ctx.lineTo(...pos2)
         ctx.stroke()
@@ -148,9 +158,9 @@ export default class Graph {
     }
 
   }
-  private drawAxisTitle(data: AxisTitleOptions[]) {
+  private drawAxisTitle(data: TextOptions[]) {
     if (!data) return
-    const edgeLength = this.#edgeLength
+    const sideLength = this.#sideLength
     const margin = 60
     const ctx = this.#context
     ctx.font = '30px Arial'
@@ -161,14 +171,14 @@ export default class Graph {
     // u axis
     if (!data[0].disable) {
       const pos1 = getCanvas2DCoord(.5, 0, .5)
-      applyTranformation(pos1, edgeLength, [0, margin])
+      applyTranformation(pos1, sideLength, [0, margin])
       ctx.beginPath()
       ctx.fillText(data[0].text, ...pos1)
     }
     // v axis
     if (!data[1].disable) {
       const pos2 = getCanvas2DCoord(.5, .5, 0)
-      applyTranformation(pos2, edgeLength, [margin, 0])
+      applyTranformation(pos2, sideLength, [margin, 0])
       ctx.save()
       ctx.translate(...pos2)
       ctx.rotate(Math.PI / 3)
@@ -179,7 +189,7 @@ export default class Graph {
     // w axis
     if (!data[2].disable) {
       const pos3 = getCanvas2DCoord(0, .5, 0.5)
-      applyTranformation(pos3, edgeLength, [- margin, 0])
+      applyTranformation(pos3, sideLength, [- margin, 0])
       ctx.save()
       ctx.translate(...pos3)
       ctx.beginPath()
@@ -189,20 +199,20 @@ export default class Graph {
       ctx.restore()
     }
   }
-  private drawPoints(content: GraphOptions['data']) {
+  private drawDataSet(content: GraphOptions['data']) {
     if (!content || content.length === 0) return
-    this.#data = content    
-    const triangleEdgeLength = this.#edgeLength
-    let point:DataOptions //reduce gc
-    let data:Partial<DataForSearch>
+    this.data = JSON.parse(JSON.stringify(content))
+    const triangleSideLength = this.#sideLength
+    let point: DataOptions //reduce gc
+    let data: Partial<DataForSearch>
     // let dotSize = 5
     const ctx = this.#context
     const PIx2 = Math.PI * 2
     ctx.strokeStyle = 'dodgerblue'
     const enableTooltip = this.#enableTooltip
-    for (var i = 0, l = content.length; i < l; i++) {
+    for (let i = 0, l = content.length; i < l; i++) {
       point = content[i]
-      data = this.#data[i]
+      data = this.data[i]
       let dotSize = point.dotSize || 5
       // [x, y] = getCanvas2DCoord(...point.coordinate)
       // boost performance
@@ -211,10 +221,20 @@ export default class Graph {
       let w = point.coordinate[2]
       let x = v * COS60 + u
       let y = (1 - v) * SIN60
-      x = Math.trunc(triangleEdgeLength * x)
-      y = Math.trunc(triangleEdgeLength * y)
+      x = Math.trunc(triangleSideLength * x)
+      y = Math.trunc(triangleSideLength * y)
+      const imageSize = point.imageSize || this.#defaultImageSize
+      if (point.type === 'image' && point.imageURL) {
+        const image = new Image()
+        image.src = point.imageURL
+        image.onload = () => {
+          createImageBitmap(image, 0, 0, image.width,image.height).then(img => {
+            this.data[i].image = img
 
-      if (point.type === 'dot') {
+            ctx.drawImage(img, x - imageSize / 2, y - imageSize / 2, imageSize, imageSize)
+          })
+        }
+      } else {
         if (point.dotColor) ctx.fillStyle = point.dotColor // this one takes really long
         if (point.dotSize) dotSize = point.dotSize
         ctx.beginPath()
@@ -226,9 +246,9 @@ export default class Graph {
         data.xyCoord = [x, y]
         data.squareRadius = dotSize ** 2
 
-        data.uAxisCoord = [Math.trunc(u * triangleEdgeLength), Math.trunc(SIN60 * triangleEdgeLength)]
-        data.vAxisCoord = [Math.trunc((v * COS60 + 1 - v) * triangleEdgeLength), Math.trunc((1 - v) * SIN60 * triangleEdgeLength)]
-        data.wAxisCoord = [Math.trunc((1 - w) * COS60 * triangleEdgeLength), Math.trunc(w * SIN60 * triangleEdgeLength)]
+        data.uAxisCoord = [Math.trunc(u * triangleSideLength), Math.trunc(SIN60 * triangleSideLength)]
+        data.vAxisCoord = [Math.trunc((v * COS60 + 1 - v) * triangleSideLength), Math.trunc((1 - v) * SIN60 * triangleSideLength)]
+        data.wAxisCoord = [Math.trunc((1 - w) * COS60 * triangleSideLength), Math.trunc(w * SIN60 * triangleSideLength)]
       }
 
 
@@ -236,8 +256,7 @@ export default class Graph {
     }
   }
   private drawTooltipLayer(option: GraphOptions['tooltip']) {
-    if (!this.#data) return
-    const edgeLength = this.#edgeLength
+    if (!this.data) return
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     // this.#tooltipCanvas = canvas
     this.#domElement.appendChild(canvas)
@@ -248,15 +267,6 @@ export default class Graph {
     })
     canvas.height = this.#domElement.clientHeight
     canvas.width = this.#domElement.clientWidth
-    canvas.addEventListener('mousemove', renderHoverEffect)
-    const ctx = canvas.getContext('2d')
-    ctx.translate(...this.#offset)
-
-    // ctx.fillStyle = '#f00f'
-    const mainColor = '#000e'
-    ctx.strokeStyle = mainColor
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
     const tooltipLineSize = 20
     let nameFontSize = 13
     let detailFontSize = 11
@@ -265,18 +275,20 @@ export default class Graph {
     let horizontalPadding = 12 //padding left and right of the rectangle
     let rectHeight = verticalPadding * 2 + nameFontSize + detailFontSize * 3 + gap * 3  // 
     let rectWidth = 100  // will recalculated later
-    const that = this
     let picked: Partial<DataForSearch> = null
-    function renderHoverEffect(e: MouseEvent) {
+
+    const renderHoverEffect = (e: MouseEvent) => {
       requestAnimationFrame(() => {
 
-        const x = e.offsetX - that.#offset[0]
-        const y = e.offsetY - that.#offset[1]
-        const item = pick(x, y, that.#data)
+        const x = e.offsetX - this.#offset[0]
+        const y = e.offsetY - this.#offset[1]
+        const item = pick(x, y, this.data)
         //TODO no repainting if cursor is still inside the same dot 
         // if (item === picked) return  //(looks like its bugged)
-        ctx.clearRect(-that.#offset[0], -that.#offset[1], canvas.height+that.#offset[0], canvas.width+that.#offset[0])
+        ctx.clearRect(-this.#offset[0], -this.#offset[1], canvas.height + this.#offset[0], canvas.width + this.#offset[0])
+        // TODO can't fully clear
         if (!item) return
+        const imageSize = item.imageSize || this.#defaultImageSize
         picked = item
         // draw dash lines to axes        
         ctx.setLineDash([8, 4])
@@ -308,7 +320,7 @@ export default class Graph {
         ctx.font = `${nameFontSize}px Arial`
         ctx.fillText(item.title || '', rectStartX + horizontalPadding, rectStartY + verticalPadding)
         const width0 = ctx.measureText(item.title || '').width
-        const axisTitles = that.#options?.axis?.titles
+        const axisTitles = this.#options?.axis?.titles
         ctx.font = `${detailFontSize}px Arial`
         const text1 = `${axisTitles?.[0]?.text || 'U'}: ${(item.coordinate[0] * 100).toFixed(2)}%`
         ctx.fillText(text1, rectStartX + horizontalPadding, rectStartY + verticalPadding + nameFontSize + gap)
@@ -321,21 +333,43 @@ export default class Graph {
         const width3 = ctx.measureText(text3).width
         // TODO add user defined text rows
         rectWidth = Math.max(width0, width1, width2, width3) + horizontalPadding * 2
-        // repaint the dot to cover the dashed lines
-        ctx.beginPath()
-        ctx.fillStyle = item.dotColor || mainColor
-        ctx.arc(...item.xyCoord, item.dotSize, 0, Math.PI * 2)
-        ctx.fill()
-        // a cicle to highlight the dot
-        ctx.beginPath()
-        ctx.arc(...item.xyCoord, item.dotSize, 0, Math.PI * 2)
-        ctx.stroke()
+        // debugger
+        if (item.type === 'image' && item.image) {
+          ctx.drawImage(item.image, item.xyCoord[0] - imageSize / 2, item.xyCoord[1] - imageSize / 2, imageSize, imageSize)
+          // a cicle to highlight the dot
+          ctx.beginPath()
+          ctx.arc(...item.xyCoord, imageSize / 2, 0, Math.PI * 2)
+          ctx.stroke()
+
+        } else {
+          // repaint the dot to cover the dashed lines
+          ctx.beginPath()
+          ctx.fillStyle = item.dotColor || mainColor
+          ctx.arc(...item.xyCoord, item.dotSize, 0, Math.PI * 2)
+          ctx.fill()
+          // a cicle to highlight the dot
+          ctx.beginPath()
+          ctx.arc(...item.xyCoord, item.dotSize, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+
 
       })
     }
+    canvas.addEventListener('mousemove', renderHoverEffect)
+    const ctx = canvas.getContext('2d')
+    ctx.translate(...this.#offset)
+
+    // ctx.fillStyle = '#f00f'
+    const mainColor = '#000e'
+    ctx.strokeStyle = mainColor
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+
+
 
   }
-  destroy(){
+  destroy() {
     this.#domElement.remove()
     // brower will handle the event listeners itself
   }
@@ -344,7 +378,7 @@ function pick(x: number, y: number, data: Partial<DataForSearch>[]) {
   // maybe add a spatial search tree for better performance --- unnessassary, it's much much faster than drawing those amount of points
   // TODO: no early returns, since there would be mutlple points picked at the same place
   // maybe find a list and return the closest
-  let point:Partial<DataForSearch>
+  let point: Partial<DataForSearch>
   for (let i = 0, l = data.length; i < l; i++) {
     point = data[i]
     const squareDistance = (x - point.xyCoord[0]) ** 2 + (y - point.xyCoord[1]) ** 2
@@ -359,20 +393,23 @@ interface GraphOptions {
   width?: number, //if not given, the graph will use the width of the container div.
   height?: number,
   // clockwise?: boolean, // unimplemented.
-  axis?:AxisOptions,
+  title?:TextOptions
+  subtitle?:TextOptions
+  axis?: AxisOptions,
   data: DataOptions[],
   tooltip?: {
     disable?: boolean
   }
 }
-interface AxisOptions {
-  titles?:AxisTitleOptions[]
-  ticks?:TickOptions,
+// all kinds of text
+interface TextOptions{
+  disable?:boolean
+  text?:string
+  fontSize?:number
 }
-interface AxisTitleOptions {
-  disable?: boolean
-  text?: string
-  fontSize?: number
+interface AxisOptions {
+  titles?: TextOptions[]
+  ticks?: TickOptions,
 }
 interface TickOptions {
   disable?: boolean,
@@ -385,7 +422,8 @@ interface DataOptions {
   dotSize?: number
   dotColor?: string
   imageURL?: string
-  coordinate?: [number, number, number]  
+  imageSize?: number
+  coordinate?: [number, number, number]
 }
 
 interface DataForSearch extends DataOptions {
@@ -393,7 +431,8 @@ interface DataForSearch extends DataOptions {
   squareRadius: number
   uAxisCoord: [number, number],
   vAxisCoord: [number, number],
-  wAxisCoord: [number, number]
+  wAxisCoord: [number, number],
+  image: ImageBitmap
 }
 
 

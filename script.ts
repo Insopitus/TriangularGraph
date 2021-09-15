@@ -5,6 +5,12 @@ import Graph from "./src/Graph";
 const option = {
   width: 1200,
   height: 800,
+  title:{
+    text:'Energy Mix of the Top 10 Industrial Countries'
+  },
+  subtitle:{
+    text:'Just A Subtitle Placeholder'
+  },
   axis:{
     ticks:{
       innerLine:true,
@@ -59,7 +65,7 @@ function animate(){
 }
 function generatePoints() {
   const t0 = performance.now()
-  const POINT_COUNT = 1e2
+  const POINT_COUNT = 1e1
 
   const data = new Array(POINT_COUNT)
   for (let i = 0; i < POINT_COUNT; i++) {
@@ -74,8 +80,9 @@ function generatePoints() {
     const colorV = Math.trunc(v * 0xff).toString(16).padStart(2, '0')
     const colorW = Math.trunc(w * 0xff).toString(16).padStart(2, '0')
     data[i] = {
-      type: 'dot',
-      title:'Entity '+ i,
+      type: 'image',
+      title:'France',
+      imageURL:'./assets/197-france.png',
       dotColor: '#' + colorU + colorV + colorW,
       dotSize: 10,
       coordinate: [u, v, w]
