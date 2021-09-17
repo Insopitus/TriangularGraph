@@ -22,33 +22,34 @@ export default class Graph {
   // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
-    this.#options = options
-    const width = options.width || 600
-    const height = options.height || 400
+    this.#options = JSON.parse(JSON.stringify(options)) // a deep clone (i wonder if it's necessary)
+    const opt = this.#options
+    opt.width ||= 600
+    opt.height ||= 400
     const container = document.querySelector(query)
     if (!container) throw `The elment ${query} cannot be found.`
     // this.#container = container
     this.#domElement = document.createElement('div')
     this.#domElement.className = 'graph-container'
     Object.assign(this.#domElement.style, {
-      height: height + 'px',
-      width: width + 'px',
+      height: opt.width + 'px',
+      width: opt.height + 'px',
       position: 'relative'
     })
     const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
+    canvas.width = opt.width
+    canvas.height = opt.height
     canvas.style.position = 'absolute'
     container.appendChild(this.#domElement)
     this.#domElement.appendChild(canvas)
     const context = canvas.getContext('2d', { alpha: false })
     // background color
     context.fillStyle = 'gray'
-    context.fillRect(0, 0, width, height)
+    context.fillRect(0, 0, opt.width, opt.height)
 
     this.#context = context
-    this.#enableTooltip = !options.tooltip?.disable
-    this.render(options.data)
+    this.#enableTooltip = !opt.tooltip?.disable
+    this.render(opt.data)
 
   }
   render(data?: GraphOptions['data']) {
@@ -64,12 +65,14 @@ export default class Graph {
     this.drawTooltipLayer(this.#options.tooltip)
     console.debug(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
-
+  // TODO all the default values should be given here to calculate the layout
   private calcLayout() {
     const { title, subtitle, axis, width, height } = this.#options
     const offsets = this.#layout.offsets
+    let verticalOffset = height/50 // a margin-top of 2% height
     offsets.title[0] = width/2
-    offsets.title[1] = height/50
+    offsets.title[1] = verticalOffset
+    verticalOffset+=(title.fontSize)
   }
   private drawTitles(titleOptions: TextOptions, subtitleOptions: TextOptions) {
     if (!titleOptions || titleOptions.disable) return
