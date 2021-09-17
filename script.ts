@@ -6,7 +6,7 @@ const option = {
   width: 1200,
   height: 800,
   title:{
-    text:'Energy Mix of the Top 10 Industrial Countries'
+    text:'Energy Mix of Top 10 Industrial Countries'
   },
   subtitle:{
     text:'Just A Subtitle Placeholder'
@@ -18,15 +18,15 @@ const option = {
     },
     titles: [
       {
-        text: 'U Axis',
+        text: 'Fossile',
         fontSize: 20
       },
       {
-        text: 'V Axis',
+        text: 'Renewable',
         fontSize: 20
       },
       {
-        text: 'W Axis',
+        text: 'Nuclear',
         fontSize: 20
       },
     ]
