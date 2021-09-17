@@ -5,12 +5,20 @@ export default class Graph {
   #domElement: HTMLDivElement
   #context: CanvasRenderingContext2D
   #options: GraphOptions
-  #offset: [number, number]
   data: Partial<DataForSearch>[]
   #enableTooltip = false
-  #imageCache: Map<string, HTMLImageElement> // if the data uses image instead of dots
-  #sideLength: number
+  #imageCache: Map<string, HTMLImageElement> // if the data uses image instead of dots // TODO use cache instead
   #defaultImageSize = 28
+  #layout = {
+    offsets: {
+      title: [0, 0],
+      subtitle: [0, 0],
+      triangle: [200, 100],
+    },
+    sizes:{
+      triangle:600 //side length
+    }
+  }
   // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
@@ -37,11 +45,7 @@ export default class Graph {
     // background color
     context.fillStyle = 'gray'
     context.fillRect(0, 0, width, height)
-    const offsetX = 200
-    const offsetY = 100
-    this.#offset = [offsetX, offsetY]
-    this.#sideLength = 600
-    context.translate(offsetX, offsetY) // use global tranlate instead of offset in every single path
+
     this.#context = context
     this.#enableTooltip = !options.tooltip?.disable
     this.render(options.data)
@@ -49,25 +53,42 @@ export default class Graph {
   }
   render(data?: GraphOptions['data']) {
     data ||= this.#options.data
-
+    // const ctx = this.#context
+    // const offsets = this.#layout.offsets
     const t1 = performance.now()
-    this.calcLayout()
-    this.drawTitles(this.#options.title,this.#options.subtitle)
+    this.calcLayout()    
+    this.drawTitles(this.#options.title, this.#options.subtitle)
     this.drawTriangleBody()
     this.drawAxes(this.#options.axis)
     this.drawDataSet(data)
     this.drawTooltipLayer(this.#options.tooltip)
     console.debug(`Rendering ${data.length} points took ${performance.now() - t1} ms.`)
   }
-  private calcLayout(){
-    const {title,subtitle,axis,width,height} = this.#options
-  }
-  private drawTitles(titleOptions:TextOptions,subtitleOptions:TextOptions){
-    if(!titleOptions || titleOptions.disable)return
 
+  private calcLayout() {
+    const { title, subtitle, axis, width, height } = this.#options
+    const offsets = this.#layout.offsets
+    offsets.title[0] = width/2
+    offsets.title[1] = height/50
+  }
+  private drawTitles(titleOptions: TextOptions, subtitleOptions: TextOptions) {
+    if (!titleOptions || titleOptions.disable) return
+    const ctx = this.#context
+    const offsets = this.#layout.offsets
+    ctx.translate(offsets.title[0],offsets.title[1])
+    ctx.fillStyle = titleOptions.color || '#000000'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    const fontSize = titleOptions.fontSize || 20
+    const fontName = titleOptions.font || 'Times New Roman'
+    ctx.font = `${fontSize}px ${fontName}`
+    ctx.fillText(titleOptions.text,0,0)
+
+
+    ctx.translate(-offsets.title[0],-offsets.title[1])
   }
   private drawTriangleBody() {
-    const sideLength = this.#sideLength
+    const sideLength = this.#layout.sizes.triangle
     const ctx = this.#context
     ctx.fillStyle = 'white'
     const triangleHeight = sideLength * SIN60
@@ -91,11 +112,12 @@ export default class Graph {
     const scaleSize = 10 // length of scale line
     const textMargin = 24 // distance between triangle edge and scale text
     if (option.disable) return
-    const triangleSideLength = this.#sideLength
+    const triangleSideLength = this.#layout.sizes.triangle
     const ctx = this.#context
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#000'
+    ctx.font = '12px Arial'
     // u axis
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
@@ -160,7 +182,7 @@ export default class Graph {
   }
   private drawAxisTitle(data: TextOptions[]) {
     if (!data) return
-    const sideLength = this.#sideLength
+    const sideLength = this.#layout.sizes.triangle
     const margin = 60
     const ctx = this.#context
     ctx.font = '30px Arial'
@@ -202,7 +224,7 @@ export default class Graph {
   private drawDataSet(content: GraphOptions['data']) {
     if (!content || content.length === 0) return
     this.data = JSON.parse(JSON.stringify(content))
-    const triangleSideLength = this.#sideLength
+    const triangleSideLength = this.#layout.sizes.triangle
     let point: DataOptions //reduce gc
     let data: Partial<DataForSearch>
     // let dotSize = 5
@@ -228,7 +250,7 @@ export default class Graph {
         const image = new Image()
         image.src = point.imageURL
         image.onload = () => {
-          createImageBitmap(image, 0, 0, image.width,image.height).then(img => {
+          createImageBitmap(image, 0, 0, image.width, image.height).then(img => {
             this.data[i].image = img
 
             ctx.drawImage(img, x - imageSize / 2, y - imageSize / 2, imageSize, imageSize)
@@ -276,16 +298,16 @@ export default class Graph {
     let rectHeight = verticalPadding * 2 + nameFontSize + detailFontSize * 3 + gap * 3  // 
     let rectWidth = 100  // will recalculated later
     let picked: Partial<DataForSearch> = null
-
+    const offset = this.#layout.offsets.triangle
     const renderHoverEffect = (e: MouseEvent) => {
       requestAnimationFrame(() => {
 
-        const x = e.offsetX - this.#offset[0]
-        const y = e.offsetY - this.#offset[1]
+        const x = e.offsetX - offset[0]
+        const y = e.offsetY - offset[1]
         const item = pick(x, y, this.data)
         //TODO no repainting if cursor is still inside the same dot 
         // if (item === picked) return  //(looks like its bugged)
-        ctx.clearRect(-this.#offset[0], -this.#offset[1], canvas.height + this.#offset[0], canvas.width + this.#offset[0])
+        ctx.clearRect(-offset[0], -offset[1], canvas.height + offset[0], canvas.width + offset[0])
         // TODO can't fully clear
         if (!item) return
         const imageSize = item.imageSize || this.#defaultImageSize
@@ -358,7 +380,7 @@ export default class Graph {
     }
     canvas.addEventListener('mousemove', renderHoverEffect)
     const ctx = canvas.getContext('2d')
-    ctx.translate(...this.#offset)
+    ctx.translate(offset[0],offset[1])
 
     // ctx.fillStyle = '#f00f'
     const mainColor = '#000e'
@@ -393,8 +415,8 @@ interface GraphOptions {
   width?: number, //if not given, the graph will use the width of the container div.
   height?: number,
   // clockwise?: boolean, // unimplemented.
-  title?:TextOptions
-  subtitle?:TextOptions
+  title?: TextOptions
+  subtitle?: TextOptions
   axis?: AxisOptions,
   data: DataOptions[],
   tooltip?: {
@@ -402,10 +424,12 @@ interface GraphOptions {
   }
 }
 // all kinds of text
-interface TextOptions{
-  disable?:boolean
-  text?:string
-  fontSize?:number
+interface TextOptions {
+  disable?: boolean
+  text?: string
+  font?:string
+  fontSize?: number
+  color?:string
 }
 interface AxisOptions {
   titles?: TextOptions[]
