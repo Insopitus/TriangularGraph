@@ -9,7 +9,7 @@ const option = {
     text:'Energy Mix of Top 10 Industrial Countries'
   },
   subtitle:{
-    text:'Just A Subtitle Placeholder'
+    text:'Just A Humble Subtitle'
   },
   axis:{
     ticks:{

@@ -68,12 +68,12 @@ export default class Graph {
   // TODO all the default values should be given here to calculate the layout
   private calcLayout() {
     const { title, subtitle, axis, width, height } = this.#options
-    title.fontSize ??= 20
-    subtitle.fontSize ??= 16
+    title.fontSize ??= 24
+    subtitle.fontSize ??= 20
     axis.titles ||= []
     for (let i = 0; i < 3; i++) {
       axis.titles[i] ||= {}
-      axis.titles[i].fontSize = 30
+      axis.titles[i].fontSize = 24
     }
 
     const offsets = this.#layout.offsets
@@ -107,7 +107,7 @@ export default class Graph {
     // ctx.save()
     ctx.translate(offsets.title[0], offsets.title[1])
     ctx.fillStyle = titleOptions.color || '#000000'
-    const fontSize = titleOptions.fontSize || 20
+    const fontSize = titleOptions.fontSize
     const fontName = titleOptions.font || 'Arial'
     ctx.font = `bold ${fontSize}px ${fontName}`
     ctx.fillText(titleOptions.text, 0, 0)
@@ -224,7 +224,7 @@ export default class Graph {
     const margin = 60 // TODO uniform margins
     const ctx = this.#context
     // TODO uniform font size
-    ctx.font = '30px Arial'
+    ctx.font = `${data[0].fontSize}px Arial`
     ctx.fillStyle = 'black'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
