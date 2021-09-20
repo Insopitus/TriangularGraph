@@ -3,8 +3,8 @@ import Graph from "./src/Graph";
 
 
 const option = {
-  width: 1200,
-  height: 800,
+  width: window.innerWidth,
+  height: window.innerHeight,
   title:{
     text:'Energy Mix of Top 10 Industrial Countries'
   },
@@ -33,7 +33,16 @@ const option = {
   },
   data:generatePoints()
 }
-const graph = new Graph('.graph', option)
+let graph = new Graph('.graph', option)
+window.onresize = () =>{
+  // const width = window.innerWidth
+  // const height = window.innerHeight
+  // option.width = width
+  // option.height = height
+  // graph.destroy()
+  // graph = new Graph('.graph',option)
+
+}
 // graph.destroy()
 console.log(graph);
 // animate()

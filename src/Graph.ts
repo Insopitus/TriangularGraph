@@ -8,44 +8,60 @@ export default class Graph {
   data: Partial<DataForSearch>[]
   #enableTooltip = false
   #imageCache: Map<string, HTMLImageElement> // if the data uses image instead of dots // TODO use cache instead
-  #defaultImageSize = 28
+  // define the default/calculated sizes and positions of all the entities
   #layout = {
+    width: 600,
+    height: 400,
     offsets: {
-      title: [0, 0],
-      subtitle: [0, 0],
-      triangle: [200, 100],
+      title: [300, 0],
+      subtitle: [300, 0],
+      triangle: [150, 100],
+    },
+    fontSizes:{
+      title:24,
+      subtitle:20,
+      axisTitle:24,
+      tickText:12,
+      tooltipTitle:13,
+      tooltipDetail:11,
     },
     sizes: {
-      triangle: 600 //side length
+      triangle: 300, //side length
+      dotSize: 28, // size of data dots and images
+      tickLength: 10, 
     }
+  }
+  get domElement() {
+    return this.#domElement
   }
   // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
-    this.#options = JSON.parse(JSON.stringify(options)) // a deep clone (i wonder if it's necessary)
+    this.#options = Object.freeze(options) // TODO remove freeze after devolpment
+    const layout = this.#layout
     const opt = this.#options
-    opt.width ||= 600
-    opt.height ||= 400
+    layout.width = opt.width || layout.width
+    layout.height = opt.height || layout.height
     const container = document.querySelector(query)
     if (!container) throw `The elment ${query} cannot be found.`
     // this.#container = container
     this.#domElement = document.createElement('div')
     this.#domElement.className = 'graph-container'
     Object.assign(this.#domElement.style, {
-      height: opt.height + 'px',
-      width: opt.width + 'px',
+      height: layout.height + 'px',
+      width: layout.width + 'px',
       position: 'relative'
     })
     const canvas = document.createElement('canvas')
-    canvas.width = opt.width
-    canvas.height = opt.height
+    canvas.width = layout.width
+    canvas.height = layout.height
     canvas.style.position = 'absolute'
     container.appendChild(this.#domElement)
     this.#domElement.appendChild(canvas)
     const context = canvas.getContext('2d', { alpha: false })
     // background color
     context.fillStyle = 'white'
-    context.fillRect(0, 0, opt.width, opt.height)
+    context.fillRect(0, 0, layout.width, layout.height)
 
     this.#context = context
     this.#enableTooltip = !opt.tooltip?.disable
@@ -68,35 +84,34 @@ export default class Graph {
   // TODO all the default values should be given here to calculate the layout
   private calcLayout() {
     const { title, subtitle, axis, width, height } = this.#options
-    title.fontSize ??= 24
-    subtitle.fontSize ??= 20
+    const fullSize = Math.min(width, height)
+    const titleSize = Math.round(fullSize * .04)
+    title.fontSize ??= titleSize
+    subtitle.fontSize ??= Math.round(titleSize * .75)
     axis.titles ||= []
     for (let i = 0; i < 3; i++) {
       axis.titles[i] ||= {}
-      axis.titles[i].fontSize = 24
+      axis.titles[i].fontSize = titleSize
     }
 
     const offsets = this.#layout.offsets
-    const margin = height / 50
+    const margin = Math.round(height / 50)
     let verticalOffset = margin * 4 // extra margin on top
-    offsets.title[0] = width / 2
+    offsets.title[0] = Math.round(width / 2)
     offsets.title[1] = verticalOffset
     verticalOffset += (title.fontSize)
     verticalOffset += margin
-    offsets.subtitle[0] = width / 2
+    offsets.subtitle[0] = Math.round(width / 2)
     offsets.subtitle[1] = verticalOffset
     verticalOffset += subtitle.fontSize
     verticalOffset += margin * 3 // extra margin between title and graph
     const triangleSideLength = Math.min(height - verticalOffset - 2 * margin - axis.titles[0].fontSize, width - 2 * axis.titles[0].fontSize - 4 * margin)
     this.#layout.sizes.triangle = triangleSideLength
-    
-    offsets.triangle[0] = width/2 - triangleSideLength/2
+
+    offsets.triangle[0] = Math.round(width / 2 - triangleSideLength / 2)
     offsets.triangle[1] = verticalOffset
 
     console.log(this.#layout);
-    
-
-
   }
   private drawTitles(titleOptions: TextOptions, subtitleOptions: TextOptions) {
     if (!titleOptions || titleOptions.disable) return
@@ -123,14 +138,14 @@ export default class Graph {
   private drawTriangleBody() {
     const sideLength = this.#layout.sizes.triangle
     const ctx = this.#context
-    ctx.fillStyle = 'white'
+    ctx.fillStyle = '#fdfdfdff'
     const triangleHeight = sideLength * SIN60
-    ctx.translate(this.#layout.offsets.triangle[0],this.#layout.offsets.triangle[1])
+    ctx.translate(this.#layout.offsets.triangle[0], this.#layout.offsets.triangle[1])
     ctx.beginPath()
     ctx.strokeStyle = 'black'
     ctx.lineWidth = 1
     ctx.moveTo(0, triangleHeight)
-    ctx.lineTo(.5 * sideLength, 0)
+    ctx.lineTo(Math.round(.5 * sideLength), 0)
     ctx.lineTo(sideLength, triangleHeight)
     ctx.lineTo(0, triangleHeight)
     ctx.stroke()
@@ -140,14 +155,15 @@ export default class Graph {
   private drawAxes(options: GraphOptions['axis']) {
     options ||= {}
     const ctx = this.#context
-    ctx.translate(this.#layout.offsets.triangle[0],this.#layout.offsets.triangle[1])
+    ctx.translate(this.#layout.offsets.triangle[0], this.#layout.offsets.triangle[1])
     this.drawTicks(options.ticks)
     this.drawAxisTitle(options.titles)
     ctx.resetTransform()
   }
   private drawTicks(option: TickOptions) {
     option ||= {}
-    const scaleSize = 10 // length of scale line
+    const layout = this.#layout
+    const scaleSize = layout.sizes.tickLength // length of scale line
     const textMargin = 24 // distance between triangle edge and scale text
     if (option.disable) return
     const triangleSideLength = this.#layout.sizes.triangle
@@ -155,7 +171,7 @@ export default class Graph {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#000'
-    ctx.font = '12px Arial'
+    ctx.font = `${layout.fontSizes.tickText}px Arial`
     // u axis
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
@@ -262,12 +278,13 @@ export default class Graph {
   private drawDataSet(content: GraphOptions['data']) {
     if (!content || content.length === 0) return
     this.data = content
+    const layout = this.#layout
     const triangleSideLength = this.#layout.sizes.triangle
     let point: DataOptions //reduce gc
     let data: Partial<DataForSearch>
     // let dotSize = 5
     const ctx = this.#context
-    ctx.translate(this.#layout.offsets.triangle[0],this.#layout.offsets.triangle[1])
+    ctx.translate(this.#layout.offsets.triangle[0], this.#layout.offsets.triangle[1])
     const PIx2 = Math.PI * 2
     ctx.strokeStyle = 'dodgerblue'
     const enableTooltip = this.#enableTooltip
@@ -282,9 +299,9 @@ export default class Graph {
       let w = point.coordinate[2]
       let x = v * COS60 + u
       let y = (1 - v) * SIN60
-      x = Math.trunc(triangleSideLength * x)
-      y = Math.trunc(triangleSideLength * y)
-      const imageSize = point.imageSize || this.#defaultImageSize
+      x = Math.round(triangleSideLength * x)
+      y = Math.round(triangleSideLength * y)
+      const imageSize = point.imageSize || layout.sizes.dotSize
       if (point.type === 'image' && point.imageURL) {
         const image = new Image()
         image.src = point.imageURL
@@ -307,9 +324,9 @@ export default class Graph {
         data.xyCoord = [x, y]
         data.squareRadius = dotSize ** 2
 
-        data.uAxisCoord = [Math.trunc(u * triangleSideLength), Math.trunc(SIN60 * triangleSideLength)]
-        data.vAxisCoord = [Math.trunc((v * COS60 + 1 - v) * triangleSideLength), Math.trunc((1 - v) * SIN60 * triangleSideLength)]
-        data.wAxisCoord = [Math.trunc((1 - w) * COS60 * triangleSideLength), Math.trunc(w * SIN60 * triangleSideLength)]
+        data.uAxisCoord = [Math.round(u * triangleSideLength), Math.round(SIN60 * triangleSideLength)]
+        data.vAxisCoord = [Math.round((v * COS60 + 1 - v) * triangleSideLength), Math.round((1 - v) * SIN60 * triangleSideLength)]
+        data.wAxisCoord = [Math.round((1 - w) * COS60 * triangleSideLength), Math.round(w * SIN60 * triangleSideLength)]
       }
 
 
@@ -322,22 +339,24 @@ export default class Graph {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     // this.#tooltipCanvas = canvas
     this.#domElement.appendChild(canvas)
+    const layout = this.#layout
     Object.assign(canvas.style, {
       position: 'absolute',
       top: '0',
       left: '0'
     })
-    canvas.height = this.#domElement.clientHeight
-    canvas.width = this.#domElement.clientWidth
+    canvas.height = layout.height
+    canvas.width = layout.width
     const tooltipLineSize = 20
-    let nameFontSize = 13
-    let detailFontSize = 11
+    let nameFontSize = layout.fontSizes.tooltipTitle
+    let detailFontSize = layout.fontSizes.tooltipDetail
     let gap = 4
     let verticalPadding = 8 //padding top and bottom of the rectangle
     let horizontalPadding = 12 //padding left and right of the rectangle
     let rectHeight = verticalPadding * 2 + nameFontSize + detailFontSize * 3 + gap * 3  // 
     let rectWidth = 100  // will recalculated later
     let picked: Partial<DataForSearch> = null
+
     const offset = this.#layout.offsets.triangle
     const renderHoverEffect = (e: MouseEvent) => {
       requestAnimationFrame(() => {
@@ -347,10 +366,9 @@ export default class Graph {
         const item = pick(x, y, this.data)
         //TODO no repainting if cursor is still inside the same dot 
         // if (item === picked) return  //(looks like its bugged)
-        ctx.clearRect(-offset[0], -offset[1], canvas.height + offset[0], canvas.width + offset[0])
-        // TODO can't fully clear
+        ctx.clearRect(-offset[0], -offset[1], canvas.width, canvas.height)
         if (!item) return
-        const imageSize = item.imageSize || this.#defaultImageSize
+        const imageSize = item.imageSize || layout.sizes.dotSize
         picked = item
         // draw dash lines to axes        
         ctx.setLineDash([8, 4])
@@ -510,7 +528,7 @@ interface DataForSearch extends DataOptions {
 // actually, w is ignored. u + v + w should always equal 1
 export function getCanvas2DCoord(u: number, v: number, w: number): [number, number] {
   const x = v * COS60 + u
-  const y = (1 - v) * SIN60  //canvas2d coordinate
+  const y = (1 - v) * SIN60  //canvas2d coordinate (before mutiply with triangle side length)
   return [x, y]
 }
 
