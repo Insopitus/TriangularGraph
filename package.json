@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "ts-node node_modules/tape/bin/tape test/*.ts | tap-spec",
-    "dev": "vite",
+    "dev": "vite --host",
     "build":"tsc --project tsconfig.json"
   },
   "keywords": [

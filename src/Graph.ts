@@ -17,18 +17,18 @@ export default class Graph {
       subtitle: [300, 0],
       triangle: [150, 100],
     },
-    fontSizes:{
-      title:24,
-      subtitle:20,
-      axisTitle:24,
-      tickText:12,
-      tooltipTitle:13,
-      tooltipDetail:11,
+    fontSizes: {
+      title: 24,
+      subtitle: 20,
+      axisTitle: 24,
+      tickText: 12,
+      tooltipTitle: 13,
+      tooltipDetail: 11,
     },
     sizes: {
       triangle: 300, //side length
       dotSize: 28, // size of data dots and images
-      tickLength: 10, 
+      tickLength: 10,
     }
   }
   get domElement() {
@@ -37,10 +37,10 @@ export default class Graph {
   // #container:Element
   constructor(query: string, options: GraphOptions) {
     if (!options) throw 'options are needed.'
-    this.#options = Object.freeze(options) // TODO remove freeze after devolpment
+    this.#options = options // don't modify the options object, and don't stringify+parse to deep clone it (performance and callback funtion options)
     const layout = this.#layout
     const opt = this.#options
-    layout.width = opt.width || layout.width
+    layout.width = opt.width || layout.width  // TODO maybe move this to calcLayout method
     layout.height = opt.height || layout.height
     const container = document.querySelector(query)
     if (!container) throw `The elment ${query} cannot be found.`
@@ -83,30 +83,36 @@ export default class Graph {
   }
   // TODO all the default values should be given here to calculate the layout
   private calcLayout() {
-    const { title, subtitle, axis, width, height } = this.#options
+    const { title, subtitle, axis } = this.#options
+    const layout = this.#layout
+    const width = layout.width
+    const height = layout.height
     const fullSize = Math.min(width, height)
     const titleSize = Math.round(fullSize * .04)
-    title.fontSize ??= titleSize
-    subtitle.fontSize ??= Math.round(titleSize * .75)
-    axis.titles ||= []
-    for (let i = 0; i < 3; i++) {
-      axis.titles[i] ||= {}
-      axis.titles[i].fontSize = titleSize
-    }
+    const subtitleSize = Math.round(titleSize * .75)
+    layout.fontSizes.title = title?.fontSize || titleSize
+    layout.fontSizes.subtitle = subtitle?.fontSize || subtitleSize
+    layout.fontSizes.axisTitle = axis?.titles?.[0]?.fontSize || titleSize
+    layout.fontSizes.tickText = Math.round(titleSize/2)
 
-    const offsets = this.#layout.offsets
+    const offsets = layout.offsets
     const margin = Math.round(height / 50)
     let verticalOffset = margin * 4 // extra margin on top
-    offsets.title[0] = Math.round(width / 2)
-    offsets.title[1] = verticalOffset
-    verticalOffset += (title.fontSize)
-    verticalOffset += margin
-    offsets.subtitle[0] = Math.round(width / 2)
-    offsets.subtitle[1] = verticalOffset
-    verticalOffset += subtitle.fontSize
+    if (title && !title.disable) {
+      offsets.title[0] = Math.round(width / 2)
+      offsets.title[1] = verticalOffset
+      verticalOffset += layout.fontSizes.title
+      verticalOffset += margin
+    }
+    if (subtitle && !subtitle.disable) {
+      offsets.subtitle[0] = Math.round(width / 2)
+      offsets.subtitle[1] = verticalOffset
+      verticalOffset += layout.fontSizes.subtitle
+    }
     verticalOffset += margin * 3 // extra margin between title and graph
-    const triangleSideLength = Math.min(height - verticalOffset - 2 * margin - axis.titles[0].fontSize, width - 2 * axis.titles[0].fontSize - 4 * margin)
-    this.#layout.sizes.triangle = triangleSideLength
+    const axisTitleSize = layout.fontSizes.axisTitle
+    const triangleSideLength = Math.min(height - verticalOffset - 2 * margin - axisTitleSize, width - 2 * axisTitleSize - 4 * margin)
+    layout.sizes.triangle = triangleSideLength
 
     offsets.triangle[0] = Math.round(width / 2 - triangleSideLength / 2)
     offsets.triangle[1] = verticalOffset
@@ -116,23 +122,28 @@ export default class Graph {
   private drawTitles(titleOptions: TextOptions, subtitleOptions: TextOptions) {
     if (!titleOptions || titleOptions.disable) return
     const ctx = this.#context
-    const offsets = this.#layout.offsets
+    const { offsets, fontSizes } = this.#layout
+
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     // ctx.save()
-    ctx.translate(offsets.title[0], offsets.title[1])
-    ctx.fillStyle = titleOptions.color || '#000000'
-    const fontSize = titleOptions.fontSize
-    const fontName = titleOptions.font || 'Arial'
-    ctx.font = `bold ${fontSize}px ${fontName}`
-    ctx.fillText(titleOptions.text, 0, 0)
-    ctx.resetTransform()
-    ctx.translate(offsets.subtitle[0], offsets.subtitle[1])
-    ctx.fillStyle = subtitleOptions.color || '#000'
-    const fontSize2 = subtitleOptions.fontSize
-    const fontName2 = subtitleOptions.font || 'Times New Roman'
-    ctx.font = `${fontSize2}px ${fontName2}`
-    ctx.fillText(subtitleOptions.text, 0, 0)
+    if (titleOptions && !titleOptions.disable) {
+      ctx.translate(offsets.title[0], offsets.title[1])
+      ctx.fillStyle = titleOptions.color || '#000000'
+      const fontSize = fontSizes.title
+      const fontName = titleOptions.font || 'Arial'
+      ctx.font = `bold ${fontSize}px ${fontName}`
+      ctx.fillText(titleOptions.text, 0, 0)
+      ctx.resetTransform()
+    }
+    if (subtitleOptions && !subtitleOptions.disable) {
+      ctx.translate(offsets.subtitle[0], offsets.subtitle[1])
+      ctx.fillStyle = subtitleOptions.color || '#000'
+      const fontSize2 = fontSizes.subtitle
+      const fontName2 = subtitleOptions.font || 'Times New Roman'
+      ctx.font = `${fontSize2}px ${fontName2}`
+      ctx.fillText(subtitleOptions.text, 0, 0)
+    }
     ctx.resetTransform()
   }
   private drawTriangleBody() {
@@ -172,6 +183,7 @@ export default class Graph {
     ctx.textBaseline = 'middle'
     ctx.fillStyle = '#000'
     ctx.font = `${layout.fontSizes.tickText}px Arial`
+    const defaultInnerLineColor = '#0f0f0f1f'
     // u axis
     for (let i = 1; i <= 5; i++) {
       ctx.strokeStyle = 'black'
@@ -182,12 +194,12 @@ export default class Graph {
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] + scaleSize * SIN60)
       ctx.stroke()
       ctx.fillText(`${.2 * 100 * i}%`, pos[0] - textMargin * COS60, pos[1] + textMargin * SIN60)
-      if (option.innerLine) {
+      if (!option.disableInnerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(.2 * i, 1 - .2 * i, 0)
         applyTranformation(pos2, triangleSideLength)
-        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.strokeStyle = option.innerLineColor || defaultInnerLineColor
         ctx.lineTo(...pos2)
         ctx.stroke()
       }
@@ -202,12 +214,12 @@ export default class Graph {
       ctx.lineTo(pos[0] + scaleSize, pos[1])
       ctx.stroke()
       ctx.fillText(`${.2 * 100 * i}%`, pos[0] + textMargin, pos[1])
-      if (option.innerLine) {
+      if (!option.disableInnerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(0, 0.2 * i, 1 - .2 * i)
         applyTranformation(pos2, triangleSideLength)
-        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.strokeStyle = option.innerLineColor || defaultInnerLineColor
         ctx.lineTo(...pos2)
         ctx.stroke()
       }
@@ -222,12 +234,12 @@ export default class Graph {
       ctx.lineTo(pos[0] - scaleSize * COS60, pos[1] - scaleSize * SIN60)
       ctx.stroke()
       ctx.fillText(`${.2 * 100 * i}%`, pos[0] - textMargin * COS60, pos[1] - textMargin * SIN60)
-      if (option.innerLine) {
+      if (!option.disableInnerLine) {
         ctx.beginPath()
         ctx.moveTo(...pos)
         const pos2 = getCanvas2DCoord(1 - 0.2 * i, 0, .2 * i)
         applyTranformation(pos2, triangleSideLength)
-        ctx.strokeStyle = option.innerLineColor || '#ffffff0f'
+        ctx.strokeStyle = option.innerLineColor || defaultInnerLineColor
         ctx.lineTo(...pos2)
         ctx.stroke()
       }
@@ -239,13 +251,17 @@ export default class Graph {
     const sideLength = this.#layout.sizes.triangle
     const margin = 60 // TODO uniform margins
     const ctx = this.#context
-    // TODO uniform font size
-    ctx.font = `${data[0].fontSize}px Arial`
+    const layout = this.#layout
+    const defaultFontSize = layout.fontSizes.axisTitle
+    ctx.font = `${defaultFontSize}px Arial`
     ctx.fillStyle = 'black'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     // u axis
     if (!data[0].disable) {
+      if (data[0].fontSize || data[0].font) {
+        ctx.font = `${data[0].fontSize || defaultFontSize}px ${data[0].font || 'Arial'}`
+      }
       const pos1 = getCanvas2DCoord(.5, 0, .5)
       applyTranformation(pos1, sideLength, [0, margin])
       ctx.beginPath()
@@ -253,6 +269,9 @@ export default class Graph {
     }
     // v axis
     if (!data[1].disable) {
+      if (data[1].fontSize || data[1].font) {
+        ctx.font = `${data[1].fontSize || defaultFontSize}px ${data[1].font || 'Arial'}`
+      }
       const pos2 = getCanvas2DCoord(.5, .5, 0)
       applyTranformation(pos2, sideLength, [margin, 0])
       ctx.save()
@@ -264,6 +283,9 @@ export default class Graph {
     }
     // w axis
     if (!data[2].disable) {
+      if (data[2].fontSize || data[2].font) {
+        ctx.font = `${data[2].fontSize || defaultFontSize}px ${data[2].font || 'Arial'}`
+      }
       const pos3 = getCanvas2DCoord(0, .5, 0.5)
       applyTranformation(pos3, sideLength, [- margin, 0])
       ctx.save()
@@ -495,7 +517,7 @@ interface AxisOptions {
 }
 interface TickOptions {
   disable?: boolean,
-  innerLine?: boolean,
+  disableInnerLine?: boolean,
   innerLineColor?: string,
 }
 interface DataOptions {

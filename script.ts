@@ -1,5 +1,7 @@
 
 import Graph from "./src/Graph";
+import jsonData from './assets/per-capita-energy-source-stacked.json'
+console.log(jsonData);
 
 
 const option = {
@@ -33,7 +35,7 @@ const option = {
   },
   data:generatePoints()
 }
-let graph = new Graph('.graph', option)
+// let graph = new Graph('.graph', option)
 window.onresize = () =>{
   // const width = window.innerWidth
   // const height = window.innerHeight
@@ -44,7 +46,7 @@ window.onresize = () =>{
 
 }
 // graph.destroy()
-console.log(graph);
+// console.log(graph);
 // animate()
 function animate(){
   const option = {
@@ -100,6 +102,48 @@ function generatePoints() {
   }
   console.debug(`Generating ${POINT_COUNT} points took ${performance.now() - t0} ms.`)
   return data
+}
+
+  const res = getEnergySourceData()
+  const data = res.map(item=>{
+    const sum = item['Fossil fuels per capita (kWh)']+item['Nuclear per capita (kWh)']+item['Renewables per capita (kWh)']
+    item.title = item.Entity
+    item.dotSize = 8
+    item.coordinate = [item['Fossil fuels per capita (kWh)']/sum,item['Nuclear per capita (kWh)']/sum,item['Renewables per capita (kWh)']/sum]
+    item.type = 'image'
+    item.imageURL = `./assets/${item.Entity.toLowerCase().split(' ').join('-')}.png`
+    return item
+  })
+  const graph = new Graph('.graph',{
+    width:window.innerWidth,
+    height:window.innerHeight,
+    data,
+    title:{
+      text:'Energy Mix of top 10 Industrial Countries in 2019'
+    },
+    axis:{
+      titles:[
+        {
+          text:'Fossil fuels'
+        },
+        {
+          text:'Nuclear'
+        },
+        {
+          text:'Renewables'
+        }
+      ]
+    }
+  })
+function getEnergySourceData() {
+  const result = []
+  const countries = ['China', 'France', 'Germany', 'India', 'Italy', 'Japan', 'United States', 'South Korea', 'Indonesia', 'United Kingdom']
+  
+    for (let item of jsonData) {
+      if (item.Year !== 2019) continue
+      if (countries.includes(item.Entity)) result.push(item)
+    }
+    return result
 }
 
 
