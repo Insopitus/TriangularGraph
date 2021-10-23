@@ -16,6 +16,7 @@ export default class Graph {
       title: [300, 0],
       subtitle: [300, 0],
       triangle: [150, 100],
+      axisTitle:80, // how far the axis titles are away from axes
     },
     fontSizes: {
       title: 24,
@@ -111,8 +112,10 @@ export default class Graph {
     }
     verticalOffset += margin * 3 // extra margin between title and graph
     const axisTitleSize = layout.fontSizes.axisTitle
+    layout.offsets.axisTitle = 2.8 * axisTitleSize
     const triangleSideLength = Math.min(height - verticalOffset - 2 * margin - axisTitleSize, width - 2 * axisTitleSize - 4 * margin)
     layout.sizes.triangle = triangleSideLength
+    layout.sizes.tickLength = .02 * triangleSideLength
 
     offsets.triangle[0] = Math.round(width / 2 - triangleSideLength / 2)
     offsets.triangle[1] = verticalOffset
@@ -175,7 +178,7 @@ export default class Graph {
     option ||= {}
     const layout = this.#layout
     const scaleSize = layout.sizes.tickLength // length of scale line
-    const textMargin = 24 // distance between triangle edge and scale text
+    const textMargin = 3 * scaleSize // distance between triangle edge and scale text
     if (option.disable) return
     const triangleSideLength = this.#layout.sizes.triangle
     const ctx = this.#context
@@ -249,7 +252,7 @@ export default class Graph {
   private drawAxisTitle(data: TextOptions[]) {
     if (!data) return
     const sideLength = this.#layout.sizes.triangle
-    const margin = 60 // TODO uniform margins
+    const margin = this.#layout.offsets.axisTitle
     const ctx = this.#context
     const layout = this.#layout
     const defaultFontSize = layout.fontSizes.axisTitle
@@ -435,7 +438,6 @@ export default class Graph {
         const width3 = ctx.measureText(text3).width
         // TODO add user defined text rows
         rectWidth = Math.max(width0, width1, width2, width3) + horizontalPadding * 2
-        // debugger
         if (item.type === 'image' && item.image) {
           ctx.drawImage(item.image, item.xyCoord[0] - imageSize / 2, item.xyCoord[1] - imageSize / 2, imageSize, imageSize)
           // a cicle to highlight the dot
@@ -521,7 +523,7 @@ interface TickOptions {
   innerLineColor?: string,
 }
 interface DataOptions {
-  type?: 'dot' | 'image', //image type not implemented
+  type?: 'dot' | 'image', 
   title?: string,
   dotSize?: number
   dotColor?: string

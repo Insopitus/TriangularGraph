@@ -1,5 +1,5 @@
 
-import Graph from "./src/Graph";
+import Graph from "./src/TriangularGraph";
 import jsonData from './assets/per-capita-energy-source-stacked.json'
 console.log(jsonData);
 

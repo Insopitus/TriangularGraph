@@ -1,5 +1,5 @@
 {
-  "include": ["./src/Graph.ts"],
+  "include": ["src/TriangularGraph.ts"],
   "buildOptions": {
     
   },
