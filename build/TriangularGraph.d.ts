@@ -15,21 +15,26 @@ export default class Graph {
     destroy(): void;
 }
 interface GraphOptions {
+    /**width of the graph. if not given, the graph will use the width of the container div. */
     width?: number;
+    /**height of the graph. uses container height by default */
     height?: number;
     title?: TextOptions;
     subtitle?: TextOptions;
     axis?: AxisOptions;
     data: DataOptions[];
+    /**cursor hover tooltip */
     tooltip?: {
         disable?: boolean;
     };
 }
+/**all types of text */
 interface TextOptions {
     disable?: boolean;
     text?: string;
     font?: string;
     fontSize?: number;
+    /**font color, use CSS color string here*/
     color?: string;
 }
 interface AxisOptions {
@@ -58,5 +63,4 @@ interface DataForSearch extends DataOptions {
     wAxisCoord: [number, number];
     image: ImageBitmap;
 }
-export declare function getCanvas2DCoord(u: number, v: number, w: number): [number, number];
 export {};

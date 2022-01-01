@@ -498,7 +498,7 @@ function pick(x, y, data) {
     }
 }
 // actually, w is ignored. u + v + w should always equal 1
-export function getCanvas2DCoord(u, v, w) {
+function getCanvas2DCoord(u, v, w) {
     const x = v * COS60 + u;
     const y = (1 - v) * SIN60; //canvas2d coordinate (before mutiply with triangle side length)
     return [x, y];

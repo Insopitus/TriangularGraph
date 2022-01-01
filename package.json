@@ -6,7 +6,8 @@
   "scripts": {
     "test": "ts-node node_modules/tape/bin/tape test/*.ts | tap-spec",
     "dev": "vite --host",
-    "build":"tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "build:vite": "vite build"
   },
   "keywords": [
     "javascript",

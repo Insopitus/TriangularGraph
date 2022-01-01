@@ -494,23 +494,26 @@ function pick(x: number, y: number, data: Partial<DataForSearch>[]) {
 }
 
 interface GraphOptions {
-  width?: number, //if not given, the graph will use the width of the container div.
+  /**width of the graph. if not given, the graph will use the width of the container div. */
+  width?: number, //
+  /**height of the graph. uses container height by default */
   height?: number,
-  // clockwise?: boolean, // unimplemented.
   title?: TextOptions
   subtitle?: TextOptions
   axis?: AxisOptions,
   data: DataOptions[],
+  /**cursor hover tooltip */
   tooltip?: {
     disable?: boolean
   }
 }
-// all kinds of text
+/**all types of text */
 interface TextOptions {
   disable?: boolean
   text?: string
   font?: string
   fontSize?: number
+  /**font color, use CSS color string here*/
   color?: string
 }
 interface AxisOptions {
@@ -550,7 +553,7 @@ interface DataForSearch extends DataOptions {
 
 
 // actually, w is ignored. u + v + w should always equal 1
-export function getCanvas2DCoord(u: number, v: number, w: number): [number, number] {
+function getCanvas2DCoord(u: number, v: number, w: number): [number, number] {
   const x = v * COS60 + u
   const y = (1 - v) * SIN60  //canvas2d coordinate (before mutiply with triangle side length)
   return [x, y]
