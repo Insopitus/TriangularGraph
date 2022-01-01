@@ -1,6 +1,9 @@
 # What is a trianglar Graph?
 > Triangular graphs are graphs with three axis instead of two, taking the form of an equilateral triangle. The important features are that each axis is divided into 100, representing percentage. From each axis lines are drawn at an angle of 60 degrees to carry the values across the graph. The data used must be in the form of three components. 
 
+# Demo
+[demo](https://insopitus.github.io/TriangularGraph/)
+
 # Installation
 no npm package yet, so use one of these below:
 1. script tag
@@ -62,14 +65,6 @@ interface DataOptions {
   coordinate?: [number, number, number]
 }
 
-interface DataForSearch extends DataOptions {
-  xyCoord: [number, number],
-  squareRadius: number
-  uAxisCoord: [number, number],
-  vAxisCoord: [number, number],
-  wAxisCoord: [number, number],
-  image: ImageBitmap
-}
 ```
 
 ## Properties
@@ -84,10 +79,10 @@ The data set array passed in.
 
 ## Methods
 
-### render(data?: DataOptions[]):void
+### render(data?: DataOptions[]): void
 
 Render the graph using a new data set. Call this method rather than instanciating a new triangular graph if you want to update the graph in an animation loop.
 
-### destroy():void
+### destroy(): void
 
 Destroy the graph, remove it from document.
