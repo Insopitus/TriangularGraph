@@ -1,64 +1,91 @@
-import TGraph from './build/Graph.js'
-import { GUI } from './lib/dat.gui.module.js'
-
-const gui = new GUI()
+import TriangularGraph from './build/TriangularGraph.js';
+import { GUI } from './lib/dat.gui.module.js';
+const gui = new GUI();
 const guiOptions = {
-  tooltip: true,
-  ticks: true,
-  'point count': 10,
-  're-render': rerender
-}
-gui.add(guiOptions, 'tooltip')
-gui.add(guiOptions, 'ticks')
-gui.add(guiOptions, 'point count', 0, 1e4, 1)
-gui.add(guiOptions, 're-render')
-
+    width: document.body.clientWidth,
+    height: document.body.clientHeight,
+    tooltip: true,
+    ticks: true,
+    'point count': 10,
+    're-render': rerender
+};
+gui.add(guiOptions, 'width', 100, 4000, 1);
+gui.add(guiOptions, 'height', 100, 4000, 1);
+gui.add(guiOptions, 'tooltip');
+gui.add(guiOptions, 'ticks');
+gui.add(guiOptions, 'point count', 0, 1e4, 1);
+gui.add(guiOptions, 're-render');
+let graph;
 function rerender() {
-  console.log('rerender');
-}
-
-
-getEnergySourceData().then(res=>{
-  const data = res.map(item=>{
-    const sum = item['Fossil fuels per capita (kWh)']+item['Nuclear per capita (kWh)']+item['Renewables per capita (kWh)']
-    item.title = item.Entity
-    item.dotSize = 8
-    item.coordinate = [item['Fossil fuels per capita (kWh)']/sum,item['Nuclear per capita (kWh)']/sum,item['Renewables per capita (kWh)']/sum]
-    item.type = 'dot'
-
-    return item
-  })
-  const graph = new TGraph('.graph',{
-    width:980,
-    height:720,
-    data,
-    axis:{
-      titles:[
-        {
-          text:'Fossil fuels'
+    // console.log('rerender');
+    graph.destroy();
+    graph = new TriangularGraph('.graph', {
+        data: generateRandomData(guiOptions['point count']),
+        width: guiOptions.width,
+        height: guiOptions.height,
+        tooltip: {
+            disable: !guiOptions.tooltip,
         },
-        {
-          text:'Nuclear'
+        axis: {
+            titles: [
+                {
+                    text: "Axis U"
+                },
+                {
+                    text: "Axis V"
+                },
+                {
+                    text: "Axis W"
+                }
+            ],
+            ticks: {
+                disable: !guiOptions.ticks
+            }
         },
-        {
-          text:'Renewables'
-        }
-      ]
-    }
-  })
-})
-function getEnergySourceData() {
-  const result = []
-  const countries = ['Austrilia', 'Brazil', 'Canada', 'China', 'France', 'Germany', 'India', 'Italy', 'Japan', 'Russia', 'United States', 'World']
-  return fetch('./data/per-capita-energy-source-stacked.json').then(res => res.json()).then(data => {
-    for (let item of data) {
-      if (item.Year !== 2019) continue
-      if (countries.includes(item.Entity)) result.push(item)
-    }
-    return result
-  })
+        title: {
+            text: "Randomly Generated Data"
+        },
+        subtitle: {
+            text: `Press "re-render" to recreate the graph based on the new settings`
+        },
+    });
 }
-
-
-// energy mix data source: https://ourworldindata.org/energy-mix
-// <div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+graph = new TriangularGraph('.graph', {
+    width: guiOptions.width,
+    height: guiOptions.height,
+    data: generateRandomData(10),
+    title: {
+        text: "Randomly Generated Data"
+    },
+    subtitle: {
+        text: `Press "re-render" to recreate the graph based on the new settings`
+    },
+    axis: {
+        titles: [
+            {
+                text: 'Fossil fuels'
+            },
+            {
+                text: 'Nuclear'
+            },
+            {
+                text: 'Renewables'
+            }
+        ]
+    }
+});
+function generateRandomData(count) {
+    let result = [];
+    for (let i = 0; i < count; i++) {
+        let u = Math.random();
+        let v = (1 - u) * Math.random();
+        let w = 1 - u - v;
+        const data = {
+            coordinate: [u, v, w],
+            title: `Entity ${i}`,
+            dotColor: `rgb(${255 * u},${255 * v},${255 * w})`
+        };
+        result.push(data);
+    }
+    return result;
+}

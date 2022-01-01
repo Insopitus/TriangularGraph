@@ -1,11 +1,13 @@
 {
-  "include": ["./src/Graph.ts"],
+  "include": ["./script.ts"],
   "buildOptions": {
     
   },
   "compilerOptions": {
     "declaration": true,
     "target": "ES6",
-    "outDir": "./build"
-  }
+    "outDir": "./build",
+    "module": "es6"
+  },
+  
 }
