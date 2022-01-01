@@ -1,6 +1,6 @@
 {
   "name": "triangulargraph",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A javascript library that generates triangular graphs.",
   "main": "index.js",
   "scripts": {
