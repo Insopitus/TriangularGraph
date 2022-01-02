@@ -21,7 +21,7 @@ import TrianglarGraph from '/build/TrianglarGraph.js'
 const graph = new TriangularGraph("#container",options)
 ```
 
-The `options` object is described by the interface below:
+The `options` object is described by the interface `GraphOptions` below:
 ```typescript
 interface GraphOptions {
   /**width of the graph. if not given, the graph will use the width of the container div. */
