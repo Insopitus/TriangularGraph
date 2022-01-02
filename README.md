@@ -5,14 +5,14 @@
 [demo](https://insopitus.github.io/TriangularGraph/)
 
 # Installation
-no npm package yet, so use one of these below:
+The project is not on NPM yet, so you should use one of these below:
 1. script tag
 ```html
 <script src="/build/TriangularGraph.umd.js">
 ```
 2. es module
 ```js
-import TrianglarGraph from 'build/TrianglarGraph.js'
+import TrianglarGraph from '/build/TrianglarGraph.js'
 ```
 
 # Usage
