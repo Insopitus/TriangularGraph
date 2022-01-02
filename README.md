@@ -8,11 +8,11 @@
 no npm package yet, so use one of these below:
 1. script tag
 ```html
-<script src="TriangularGraph.umd.js">
+<script src="/build/TriangularGraph.umd.js">
 ```
 2. es module
 ```js
-import TrianglarGraph from 'path/to/TrianglarGraph.js'
+import TrianglarGraph from 'build/TrianglarGraph.js'
 ```
 
 # Usage
