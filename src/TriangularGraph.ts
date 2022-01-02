@@ -500,7 +500,9 @@ interface GraphOptions {
   height?: number,
   title?: TextOptions
   subtitle?: TextOptions
+  /** The 3 axes of the triangle, axis titles are defined here */
   axis?: AxisOptions,
+  /** the data set to draw on the graph */
   data: DataOptions[],
   /**cursor hover tooltip */
   tooltip?: {
@@ -509,14 +511,18 @@ interface GraphOptions {
 }
 /**all types of text */
 interface TextOptions {
+  /**if set to true, the text would be invisible */
   disable?: boolean
+  /**text content */
   text?: string
+  /**font family and font weight. eg: `bold Arial`, `900 Times New Roman` */
   font?: string
   fontSize?: number
   /**font color, use CSS color string here*/
   color?: string
 }
 interface AxisOptions {
+  /**the titles of the axes */
   titles?: TextOptions[]
   ticks?: TickOptions,
 }
@@ -526,12 +532,17 @@ interface TickOptions {
   innerLineColor?: string,
 }
 interface DataOptions {
+  /** how to draw the data on graph: a single color dot/circle of an image provided */
   type?: 'dot' | 'image', 
+  /**the name of the point */
   title?: string,
+  /**the size of the dot/circle, works only when `type` is set to `dot` */
   dotSize?: number
   dotColor?: string
+  /**image url, works only when `type` is set to `image` */
   imageURL?: string
   imageSize?: number
+  /**coordinate of the data, all numbers should be between 0~1, and the sum up of the three should be 1. */
   coordinate?: [number, number, number]
 }
 
